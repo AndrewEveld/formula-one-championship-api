@@ -53,5 +53,5 @@ jobs:
         with:
           app-name: 'formula-one-championship-api'
           slot-name: 'production'
-          publish-profile: ${{ secrets.AzureAppService_PublishProfile_1234 }}
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_ADC7CF35684B43158084D1FF31EABFAA }}
           package: .
