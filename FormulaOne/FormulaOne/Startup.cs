@@ -30,7 +30,7 @@ namespace FormulaOne
         {
 
             services.AddControllers();
-            services.AddDbContext<formula1APIContext>(option => option.UseSqlite("Data Source = formula1API.db"));
+            services.AddDbContext<formula1APIContext>(option => option.UseSqlite(Configuration.GetConnectionString("DefaultSQLiteConnection")));
             services.AddTransient<DataRepository, DataRepository>();
             services.AddSwaggerGen(c =>
             {
