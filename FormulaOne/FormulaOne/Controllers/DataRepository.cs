@@ -81,7 +81,8 @@ namespace FormulaOne.Controllers
         }
 
         public async Task<Championship> CalculateChampionship(int startYear = 1950,
-            int endYear = 2022, int pointSystemId = 6)
+            int endYear = 2022, int pointSystemId = 6, bool isAverage = false,
+            bool isAveragePointScoring = false)
         {
             List<Race> racesInRange =
                 await GetRacesFromSeasonRange(startYear, endYear);
@@ -99,7 +100,8 @@ namespace FormulaOne.Controllers
                     (race, positionPoints, championshipToReturn);
             }
             championshipToReturn.ChampionshipResults =
-                OrderChampionshipResults(championshipToReturn.ChampionshipResults);
+                OrderChampionshipResults(championshipToReturn.ChampionshipResults
+                , isAverage: isAverage, isAveragePointScoring: isAveragePointScoring);
             return championshipToReturn;
         }
 
@@ -140,7 +142,11 @@ namespace FormulaOne.Controllers
                     PositionPoint driversPositionPoint = positionPoints
                     .Single(pp => pp.Position == raceResult.Position);
                     await AddPointsForDriverInChampionship(raceResult.DriverId,
-                        championship, driversPositionPoint.Points);
+                        championship, driversPositionPoint.Points, race.Season);
+                } else
+                {
+                    await IncrementDriverSeasonResult(raceResult.DriverId,
+                        championship, race.Season);
                 }
             }
         }
@@ -151,8 +157,8 @@ namespace FormulaOne.Controllers
                 .ToListAsync();
         }
 
-        public async Task AddPointsForDriverInChampionship
-            (long driverId, Championship championship, long points)
+        public async Task IncrementDriverSeasonResult
+            (long driverId, Championship championship, long season)
         {
             if (!championship.ChampionshipResults
                 .Any(cr => cr.Driver.Id == driverId))
@@ -162,9 +168,44 @@ namespace FormulaOne.Controllers
                 championshipToAdd.Driver = driverToAdd;
                 championship.ChampionshipResults.Add(championshipToAdd);
             }
+            ChampionshipResult driversResult =
             championship.ChampionshipResults
-                    .Single(cr => cr.Driver.Id == driverId)
-                    .PointsTotal += points;
+                    .Single(cr => cr.Driver.Id == driverId);
+            if (!driversResult.ResultsPerSeason.Any(sr => sr.Season == season))
+            {
+                driversResult.ResultsPerSeason.Add(new(season));
+            }
+            DriverSeasonResult driverSeasonResult = driversResult
+                .ResultsPerSeason.Single(sr => sr.Season == season);
+            driverSeasonResult.NumRaces += 1;
+
+        }
+
+        public async Task AddPointsForDriverInChampionship
+            (long driverId, Championship championship, long points, long season)
+        {
+            if (!championship.ChampionshipResults
+                .Any(cr => cr.Driver.Id == driverId))
+            {
+                Driver driverToAdd = await GetDriverById(driverId);
+                ChampionshipResult championshipToAdd = new();
+                championshipToAdd.Driver = driverToAdd;
+                championship.ChampionshipResults.Add(championshipToAdd);
+            }
+            ChampionshipResult driversResult = 
+            championship.ChampionshipResults
+                    .Single(cr => cr.Driver.Id == driverId);
+            if (!driversResult.ResultsPerSeason.Any(sr => sr.Season == season))
+            {
+                driversResult.ResultsPerSeason.Add(new(season));
+            }
+            DriverSeasonResult driverSeasonResult = driversResult
+                .ResultsPerSeason.Single(sr => sr.Season == season);
+            driverSeasonResult.TotalPoints += points;
+            driverSeasonResult.NumRaces += 1;
+            driverSeasonResult.NumRacesPointScoring += 1;
+            driversResult.PointsTotal += points;
+            driversResult.ScoringRaces += 1;
         }
 
         public async Task<Driver> GetDriverById(long id)
@@ -173,10 +214,23 @@ namespace FormulaOne.Controllers
         }
 
         public List<ChampionshipResult> OrderChampionshipResults
-            (List<ChampionshipResult> championshipResults)
+            (List<ChampionshipResult> championshipResults, bool isAverage = false,
+            bool isAveragePointScoring = false)
         {
-            championshipResults = championshipResults
+            if (isAverage)
+            {
+                championshipResults = championshipResults
+                    .OrderByDescending(cr => cr.ScoreSumOfSeasonAverages).ToList();
+            } else if (isAveragePointScoring)
+            {
+                championshipResults = championshipResults
+                    .OrderByDescending(cr =>
+                    cr.ScoreSumOfSeasonAveragesOnlyPointScoring).ToList();
+            } else
+            {
+                championshipResults = championshipResults
                 .OrderByDescending(cr => cr.PointsTotal).ToList();
+            }
             for (int i = 1; i <= championshipResults.Count; i++)
             {
                 championshipResults[i - 1].Position = i;

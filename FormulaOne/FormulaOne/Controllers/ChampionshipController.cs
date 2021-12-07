@@ -19,39 +19,19 @@ namespace FormulaOne.Controllers
             _dataRepository = dataRepository;
         }
 
-        //// GET: api/Championship/2004
-        //[HttpGet("championship")]
-        //public async Task<ActionResult<Championship>> GetChampionship()
-        //{
-        //    return await _dataRepository.CalculateChampionship();
-        //}
-
-        //// GET: api/Championship/2004
-        //[HttpGet("championship")]
-        //public async Task<ActionResult<Championship>>
-        //    GetChampionship(int startYear)
-        //{
-        //    return await _dataRepository
-        //        .CalculateChampionship(startYear: startYear);
-        //}
-
-        //// GET: api/Championship/2004
-        //[HttpGet("championship")]
-        //public async Task<ActionResult<Championship>>
-        //    GetChampionship(int startYear, int endYear)
-        //{
-        //    return await _dataRepository
-        //        .CalculateChampionship(startYear: startYear, endYear: endYear);
-        //}
+      
 
         // GET: api/Championship/2004
         [HttpGet()]
         public async Task<ActionResult<Championship>>
-            GetChampionship(int startYear = 1950, int endYear = 2022, int pointSystemId = 6)
+            GetChampionship(int startYear = 1950, int endYear = 2022,
+            int pointSystemId = 6, bool isAverage = false,
+            bool isAveragePointScoring = false)
         {
             return await _dataRepository
                 .CalculateChampionship(startYear: startYear, endYear: endYear,
-                pointSystemId: pointSystemId);
+                pointSystemId: pointSystemId, isAverage: isAverage,
+                isAveragePointScoring: isAveragePointScoring);
         }
 
         ////// GET: api/Championship/2004
